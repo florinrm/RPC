@@ -32,6 +32,7 @@ int main (int argc, char** argv) {
         
         input1* client_request = (input1*) malloc (sizeof(input1));
         client_request->command = strdup(command);
+
         output1* server_response = get_server_response_1(client_request, cl);
         printf("Server response: %s\n", server_response->response);
 
@@ -95,10 +96,10 @@ int main (int argc, char** argv) {
             to_append->word = strdup(word);
 
             output4* appended = get_server_append_word_file_1(to_append, cl);
-            if (strcmp(appended->confirm_append_word, "NO") == 0) {
+            if (strcmp(appended->confirm_append_word, "APPEND FAILED") == 0) {
                 printf("Word %s wasn't appended in file\n", word);
-            } else if (strcmp(appended->confirm_append_word, "YES") == 0) {
-                printf("Word %s was appended successfully in file, appearing \n", word);
+            } else if (strcmp(appended->confirm_append_word, "APPEND SUCCEDED") == 0) {
+                printf("Word %s was appended successfully in file, appearing %d times\n", word, appended->word_occurences);
             }
         }
         // trick

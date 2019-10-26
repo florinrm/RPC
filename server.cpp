@@ -32,6 +32,10 @@ bool isFileClosed() {
 
 void openFileSearch() {
     file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("File cannot be opened\n");
+        exit(EXIT_FAILURE);
+    }
     is_file_open = true;
     is_file_closed = false;
 }
@@ -43,9 +47,11 @@ void openFileAppend() {
 }
 
 void closeFile() {
-    fclose(file);
-    is_file_open = false;
-    is_file_closed = true;
+    int rd = fclose(file);
+    if (rd < 0) {
+        perror("File cannot be closed\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 bool is_word_in_map(char* word) {
@@ -85,7 +91,7 @@ char* clean_word (char* word) {
 
 void populateMap() {
     openFileSearch();
-    char* word;
+    char* word = (char*) malloc (100 * sizeof(char));
     while (fscanf(file, "%s", word) != EOF) {
         word = clean_word(word);
         if (is_word_in_map(word)) {
@@ -94,6 +100,7 @@ void populateMap() {
             words_occurences[string(word)] = 1;
         }
     }
+    free(word);
     closeFile();
     is_populated = true;
 
@@ -110,7 +117,6 @@ output1* get_server_response_1_svc(input1 *in, struct svc_req* cl) {
     if (!is_populated) {
         populateMap();
     }
-
     output1* result = (output1*) malloc (sizeof(output1));
     result->response = (char*) malloc (20 * sizeof(char));
     if (strcmp(in->command, "APPEND") == 0 || strcmp(in->command, "SEARCH") == 0) {
@@ -134,10 +140,40 @@ output2* get_server_word_and_occurences_1_svc(input2 *in, struct svc_req* cl) {
 
 output3* get_server_all_word_same_size_1_svc(input3 *in, struct svc_req* cl) {
     output3* result = (output3*) malloc (sizeof(output3));
+    result->no_words_same_size = 0;
+    for (auto const& x : words_occurences) {
+        if (x.first.length() == in->n_chars) {
+            result->no_words_same_size++;
+        }
+    }
     return result;
 }
 
 output4* get_server_append_word_file_1_svc(input2 *in, struct svc_req* cl) {
     output4* result = (output4*) malloc (sizeof(output4));
+    result->word_occurences = 0;
+    file = fopen(filename, "a");
+    
+    if (file == NULL) {
+        result->confirm_append_word = strdup("APPEND FAILED");
+        return result;
+    }
+
+    fprintf(file, " %s ", in->word);
+    if (is_word_in_map(in->word)) {
+        words_occurences[string(in->word)] = words_occurences[string(in->word)] + 1;
+    } else {
+        words_occurences[string(in->word)] = 1;
+    }
+
+    result->word_occurences = words_occurences[string(in->word)];
+    result->confirm_append_word = strdup("APPEND SUCCEDED");
+
+    int rd = fclose(file);
+    if (rd < 0) {
+        result->confirm_append_word = strdup("APPEND FAILED");
+        return result;
+    }
+
     return result;
 }
