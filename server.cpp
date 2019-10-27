@@ -150,7 +150,11 @@ output4* get_server_append_word_file_1_svc(input2 *in, struct svc_req* cl) {
         return result;
     }
 
-    fprintf(file, " %s ", in->word);
+    int res = fprintf(file, " %s ", in->word);
+    if (res < 0) {
+        result->confirm_append_word = strdup("APPEND FAILED");
+        return result;
+    }
 
     int rd = fclose(file);
     if (rd < 0) {
