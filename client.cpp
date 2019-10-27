@@ -7,6 +7,15 @@
 
 #define RMACHINE "localhost"
 
+bool isValidNumber(char * str) {
+   for (int i = 0; i < strlen(str); ++i) {
+        if (str[i] < 48 || str[i] > 57) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int main (int argc, char** argv) {
 
     CLIENT* cl = clnt_create(RMACHINE, CHECKPROG, CHECKVERS, "tcp");
@@ -18,7 +27,7 @@ int main (int argc, char** argv) {
 
     while(true) {
 
-        printf("Write operation:\n");
+        printf("Write operation [SEARCH, APPEND, exit]:\n");
         char* command = (char*) malloc (20 * sizeof(char));
         fgets(command, 20, stdin);
         if (command[strlen(command) - 1] == '\n') {
@@ -37,7 +46,7 @@ int main (int argc, char** argv) {
         printf("Server response: %s\n", server_response->response);
 
         while (strncmp(server_response->response, "NO", 2) == 0) {
-
+            printf("Write operation [SEARCH, APPEND, exit]:\n");
             fgets(command, 20, stdin);
             if (command[strlen(command) - 1] == '\n') {
                 command[strlen(command) - 1] = '\0';
@@ -50,47 +59,48 @@ int main (int argc, char** argv) {
 
         if (strcmp(client_request->command, "SEARCH") == 0) {
 
-            printf("Search a word or words with a given number of characters?\n");
-            printf("Press 0 for word?\n");
-            printf("Press 1 for words with same number of characters?\n");
+            printf("Search a word or words with a given number of characters\n");
             
-            int n;
-            scanf("%d", &n);
-            while (n > 1 || n < 0) {
-                printf("Press 0 for word?\n");
-                printf("Press 1 for words with same number of characters?\n");
-                scanf("%d", &n);
+            char* word = (char*) malloc (100 * sizeof(char));
+            fgets(word, 100, stdin);
+
+            if (word[strlen(word) - 1] == '\n') {
+                word[strlen(word) - 1] = '\0';
             }
 
-            if (n == 0) {
+            if (!isValidNumber(word)) {
 
-                printf("Write the word to be searched in file\n");
-                char* word = (char*) malloc (100 * sizeof(char));
-                scanf("%s", word);
+                printf("Searching the word in file...\n");
 
                 input2* to_search = (input2*) malloc (sizeof(input2));
                 to_search->word = strdup(word);
 
                 output2* word_occurences = get_server_word_and_occurences_1(to_search, cl);
 
-                printf("%s appears %d times in file\n", word_occurences->found_word, word_occurences->occurences);
+                printf("%s appears %d times in file\n",
+                    word_occurences->found_word, word_occurences->occurences);
 
-            } else if (n == 1) {
+            } else {
 
-                printf("Write the number of characters to search in file\n");
                 input3* number_of_chars = (input3*) malloc (sizeof(input3));
-                scanf("%d", &number_of_chars->n_chars);
+                number_of_chars->n_chars = atoi(word);
+                printf("Searching the word with the length of %d in file...\n", number_of_chars->n_chars);
                 
                 output3* no_words = get_server_all_word_same_size_1(number_of_chars, cl);
 
-                printf("There are %d words with same length in file\n", no_words->no_words_same_size);
+                printf("There are %d words with length of %d in file\n",
+                    no_words->no_words_same_size, number_of_chars->n_chars);
             }
 
         } else if (strcmp(client_request->command, "APPEND") == 0) {
 
             printf("Write the word to append in file\n");
             char* word = (char*) malloc (100 * sizeof(char));
-            scanf("%s", word);
+            fgets(word, 100, stdin);
+
+            if (word[strlen(word) - 1] == '\n') {
+                word[strlen(word) - 1] = '\0';
+            }
 
             input2* to_append = (input2*) malloc (sizeof(input2));
             to_append->word = strdup(word);
@@ -99,14 +109,10 @@ int main (int argc, char** argv) {
             if (strcmp(appended->confirm_append_word, "APPEND FAILED") == 0) {
                 printf("Word %s wasn't appended in file\n", word);
             } else if (strcmp(appended->confirm_append_word, "APPEND SUCCEDED") == 0) {
-                printf("Word %s was appended successfully in file, appearing %d times\n", word, appended->word_occurences);
+                printf("Word %s was successfully appended in file, appearing %d times\n",
+                    word, appended->word_occurences);
             }
         }
-        // trick
-        int c;
-        do {
-            c = getchar();
-        } while(c != EOF && c != '\n');
     }
 
     return 0;

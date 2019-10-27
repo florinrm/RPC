@@ -10,7 +10,6 @@
 
 using namespace std;
 
-
 map<string, int> words_occurences;
 
 const char* yes_response = "YES ";
@@ -103,14 +102,6 @@ void populateMap() {
     free(word);
     closeFile();
     is_populated = true;
-
-    /*
-    for (auto const& x : words_occurences) {
-        std::cout << x.first  // string (key)
-                << ':' 
-                << x.second // string's value 
-                << std::endl;
-    } */
 }
 
 output1* get_server_response_1_svc(input1 *in, struct svc_req* cl) {
@@ -160,6 +151,13 @@ output4* get_server_append_word_file_1_svc(input2 *in, struct svc_req* cl) {
     }
 
     fprintf(file, " %s ", in->word);
+
+    int rd = fclose(file);
+    if (rd < 0) {
+        result->confirm_append_word = strdup("APPEND FAILED");
+        return result;
+    }
+
     if (is_word_in_map(in->word)) {
         words_occurences[string(in->word)] = words_occurences[string(in->word)] + 1;
     } else {
@@ -168,12 +166,6 @@ output4* get_server_append_word_file_1_svc(input2 *in, struct svc_req* cl) {
 
     result->word_occurences = words_occurences[string(in->word)];
     result->confirm_append_word = strdup("APPEND SUCCEDED");
-
-    int rd = fclose(file);
-    if (rd < 0) {
-        result->confirm_append_word = strdup("APPEND FAILED");
-        return result;
-    }
 
     return result;
 }
